@@ -1,49 +1,50 @@
 /**
-  The cell class, made for WhiteCell
-  Made by @ramayac
-*/
-//Colors came from > https://kuler.adobe.com/explore/most-favorite/?time=month
+ The cell class, made for WhiteCell
+ Made by @ramayac
+ */
 
-//color COMESTIBLE = #B3FF00, NOCOMESTIBLE = #FD012A, JUGADOR = #007BFD, TOQUE = #6EBFFF;
-color 
-COMESTIBLE = #FFC9C1, 
-NOCOMESTIBLE = #CC535A, 
-JUGADOR = #FFFFFF, 
-TOQUE = #9CFFFE;
-
-color[] paleta = {
-  //Paleta "cancer"
-  #4D4361, #423A38, #806B53, #8C745E, #7F9179, #7F9179
-  //Paleta "normal"
-  //#35203B, #AB1452, #CF3B26, #F7B522, #8CF226
-};
-
-class Celula {
+class Celula extends FCircle {
   PImage img;
-  PVector p;
-  float r;
+  //PVector p;
   boolean alive = true, encolision = false;
   color miestado = #FFFFFF, micolor = #FFFFFF;
   int transparencia = 220;
   float angulo = 0;
   float rotacion = 0.01;
+  final float GRAVEDAD = 40;
+
+  Celula(float x, float y, float r) {
+    this(x, y, r, false, false);
+    //println(x + ", " + y + ", " + r);
+  }
+
+  Celula(float x, float y, float r, boolean sprite) {
+    this(x, y, r, sprite, false);
+    //println(x + ", " + y + ", " + r + "," + sprite);
+  }
 
   Celula(float x, float y, float r, boolean sprite, boolean player) {
-    p = new PVector(x, y);
-    this.r = r;
+    super(r*2);
+    //println(x + ", " + y + ", " + r*2 + "," + sprite + "," + player);
+    setPosition(x, y);    
+
     this.alive = true;
-    
-    if(sprite){
-      //img = new PImage();
-      //img.copy(celula, 0, 0, celula.width, celula.height, 0, 0, celula.width, celula.height);
+    setGrabbable(player);
+
+    if (sprite) {
       img = celula;
+      attachImage(img);
+
       angulo = random(0, 360);
       rotacion = random(-1, 1);
-      
-      if(player){
+
+      if (player) {
         micolor = JUGADOR;
         miestado = JUGADOR;
-      } else {
+        setRotatable(false);
+        //setStatic(true);
+      } 
+      else {
         //micolor = color(random(106, 110), random(21, 191), random(204, 255));
         int i = (int)random(0, paleta.length);
         micolor = paleta[i]; //i; 
@@ -52,60 +53,58 @@ class Celula {
     }
   }
 
-  Celula(float x, float y, float r) {
-    p = new PVector(x, y);
-    this.r = r;
-  }
-
   void update(float x, float y) {
-    p.x = x;
-    p.y = y;
+    this.setPosition(x, y);
+    this.setVelocity(0, 0);
   }
 
-  void draw() {
+  void draw(processing.core.PGraphics applet) {
+    //void draw() {
     if (isAlive() == false) return;
-    float o = map(r, 0, 150, 180, 255);
-    
-    if(img != null){     
+    float o = map(getSize(), 0, 300, 180, 255);
+    //float o = map(getSize(), 0, 150, 180, 255);
+
+    if (img != null) {     
       angulo += rotacion;
-      if(angulo > 360){
+      if (angulo > 360) {
         angulo = 0;
-      } else if (angulo < 0){
+      } 
+      else if (angulo < 0) {
         angulo = 360;
       }
-      
-      //translate(p.x, p.y);
+
       pushMatrix();
-        //imageMode(CENTER);
-        //tint(mycolor, o);
-        tint(this.micolor, o);
-        translate(p.x, p.y);
-        rotate(radians(angulo));
-        //image(this.img, p.x, p.y, r*2, r*2);
-        image(this.img, 0, 0, r*2, r*2);
+      //imageMode(CENTER);
+      //tint(mycolor, o);
+      tint(this.micolor, o);
+      translate(getX(), getY());
+      rotate(radians(angulo));
+      image(this.img, 0, 0, this.getSize(), this.getSize());
       popMatrix();
       noTint();
-      
+
       noFill();
-    } else {
+    } 
+    else {
       fill(this.micolor, o);
     }
-    
-    if(encolision){
+
+    if (encolision) {
       borde(TOQUE);
-    } else {
+    } 
+    else {
       borde(this.miestado);
     }
   }
-  
-  void borde(color c){
+
+  void borde(color c) {
     stroke(c);
     strokeWeight(2);
-    ellipse(p.x, p.y, r*2, r*2);
+    ellipse(getX(), getY(), getSize(), getSize());
   }
 
   void comparar(Celula o) {
-    if (this.r < o.r) {
+    if (getSize() < o.getSize()) {
       this.miestado = COMESTIBLE;
     } 
     else {
@@ -114,60 +113,73 @@ class Celula {
   }
 
   void crece() {
-    this.r += CRECIMIENTO;
+    float s = getSize();
+    s += CRECIMIENTO;
+    setSize(s);
+    setDensity(s/100);
+
     sndcol.play();
   }
 
   void disminuye(Celula o) {
-    this.r -= DECRECIMIENTO;
-    if (r < (o.r/3)) {
-      this.r=0;
-      //this.alive = false;
+    float s = getSize();
+    s -= DECRECIMIENTO;
+    setSize(s);
+    setDensity(s/100);
+
+    if (s < (o.getSize()/3)) {
+      setSize(0);
       this.isAlive();
     }
   }
 
-  void setColision(boolean b){
+  void setColision(boolean b) {
     this.encolision = b;
   }
 
-  void setAlive(boolean b){
-   this.alive = b; 
+  void setAlive(boolean b) {
+    this.alive = b;
   }
 
   boolean isAlive() {
-    if(this.r <= 0 && this.alive) { 
+    if (getSize() <= 0 && this.alive) { 
       this.alive = false;
-      //println("Se murio :(");
-      sndmorir.play();
+      sndmorir.play(); //Se murio :(
     }
     return this.alive;
+  }
+
+  String toString() {
+    return "angulo: " + angulo + ", rotacion: " + rotacion + ", size: " + getSize() + ", alive: " + alive
+      + ", drawable: " + isDrawable() + ", x: " + getX()  + ", y: " + getY();
   }
 } 
 
 void colision(Celula a, Celula o) {
-  boolean col = circle_collision(a.p.x, a.p.y, a.r, o.p.x, o.p.y, o.r);
+  boolean col = a.isTouchingBody(o);
+  //boolean col = circle_collision(a.p.x, a.p.y, a.r, o.p.x, o.p.y, o.r);
   if (col) { 
-    if(a.isAlive() && o.isAlive()){
-      if (a.r >= o.r) {
-          o.disminuye(a);
-          a.crece();
-      } else { //a.r < = o.r
-          a.disminuye(o);
-          o.crece();
+    if (a.isAlive() && o.isAlive()) {
+      if (a.getSize() >= o.getSize()) {
+        o.disminuye(a);
+        a.crece();
+      } 
+      else { //a.r < = o.r
+        a.disminuye(o);
+        o.crece();
       }
       a.setColision(true);
       o.setColision(true);
     }
-  } else {
+  } 
+  else {
     a.setColision(false);
     o.setColision(false);
   }
-  
 }
 
+/* Old school colision
 boolean circle_collision(float x_1, float y_1, float radius_1, float x_2, float y_2, float radius_2) {
-  //println("distancia: " + dist(x_1, y_1, x_2, y_2) + ", radio: " + (radius_1 + radius_2));
-  return dist(x_1, y_1, x_2, y_2) < radius_1 + radius_2;
-}
-
+ //println("distancia: " + dist(x_1, y_1, x_2, y_2) + ", radio: " + (radius_1 + radius_2));
+ return dist(x_1, y_1, x_2, y_2) < radius_1 + radius_2;
+ }*/
